@@ -1,0 +1,239 @@
+﻿Міністерство освіти і науки України
+Харківський національний університет радіоелектроніки
+Кафедра «Програмна інженерія»
+
+
+
+
+
+Звіт 
+до практичного заняття №1 з дисципліни
+«Аналіз та рефакторинг коду»
+На тему: «Правила оформлення програмного коду»
+
+
+
+
+
+Виконала:                                                                         Перевірив:
+ст. гр. ПЗПІ-22-10                                                            ст. викладач кафедри ПІ 
+Ірина Єгошина Сергіївна                                                Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+
+Харків 2024
+	Мета:
+	Ознайомити студентів з основними рекомендаціями щодо написання чистого, ефективного та підтримуваного коду для різних мов програмування, а також навчити аналізувати та рефакторити код для покращення його якості.
+
+	Завдання:
+	Студент повинен обрати мову програмування, дослідити основні рекомендації для написання якісного коду у цій мові, продемонструвати ці рекомендації на прикладах коду, обґрунтувати кожну рекомендацію і надати детальні пояснення. Для кожного прикладу мають бути наведені фрагменти коду.
+
+	Хід роботи:
+	Було обрано мову програмування Java. У презентації (Додаток Б) наведено основні правила і рекомендації щодо оформлення програмного коду Java.
+
+	Висновки:
+	Набуто навичок рефакторингу програмного коду, детально розглянуто
+основні правила оформлення коду.
+	Відео-презентація: https://www.youtube.com/watch?v=UCeqr8W9VO8
+
+
+ДОДАТОК А
+Файл «code-format_before.java»
+1. if(user) {if(!TextUtils.isEmpty(user.Name)) saveUser(); else System.out.println("User does't have name");();}
+2. int userBill=sensorsCount*sensorsPrice;if(userBill>=1000)userBill-=discount;
+
+Файл «code-format_after.java»
+1. if (user) {
+2.     if (!TextUtils.isEmpty(user.Name)) {
+3.         saveUser();
+4.     } else {
+5.         System.out.println("User does't have name");
+6.     }
+7. }
+8. 
+9. int userBill = sensorsCount * sensorsPrice;
+10. if (userBill >= 1000) {
+11.     userBill -= discount;
+12. }
+
+Файл «code-structure_before.java»
+1. int width, height;
+2. String name, adress, email;
+3. 
+4. int 	width;
+5. int 	height;
+6. String 	name;
+7. String 	adress;
+8. String 	email;
+
+Файл «code-structure_after.java»
+1. int width;
+2. int height;
+3. String name;
+4. String adress;
+5. String email;
+6. 
+7. public int getMaxNumber(int a, int b, int c) {
+8. 	int max = 0;
+9. 
+10. 	if (a > b && a > c) {
+11. 		max = a;
+12. 	}
+13. 	else if (b > a && b > c) {
+14. 		max = b;
+15. 	}
+16. 	else{
+17. 		max = c;
+18. 	}
+19. 
+20.     return max;
+21. }
+
+Файл «coments.java»
+1. /*
+2. * place here realisation with DB connection
+3. */
+4. 
+5. // TODO: function for counting Users in DB
+
+Файл «files_and_structures_before.java»
+1. usercontroller.java  
+2. payment_processor.java  
+3. InterfaceAuthenticationService.java // Інтерфейс
+4. AuthenticationServiceImplementation.java // Реалізація
+
+Файл «files_and_structures_after.java»
+1. UserController.java  
+2. PaymentProcessor.java  
+3. IAuthenticationService.java // Інтерфейс
+4. AuthenticationServiceImpl.java // Реалізація
+5. 
+6. /user
+7.   UserController.java  
+8.   UserService.java  
+9.   UserRepository.java  
+10. 
+11. /payment
+12.   PaymentController.java  
+13.   PaymentService.java  
+14.   PaymentRepository.java  
+
+Файл «function_before.java»
+1. public void handleUsersDevices(User user) {
+2.     // Валідація наявності девайсів у користувача
+3.     if (user.getDevices().isEmpty()) {
+4.         throw new IllegalArgumentException("User doesn't have any device");
+5.     }
+6.     
+
+7.     // Розрахунок кількості сенсорів у користувача
+8.     int sencorCount = 0;
+9.     for (Device device : user.getDevices()) {
+10.         sencorCount += device.getSensorsCount();
+11.     }
+12.     user.setSensorCount(sencorCount);
+13. 
+14.     // Збереження користувача
+15.     database.save(user);
+16. }
+
+Файл «function_after.java»
+1. public void processUserWithDevices(User user) {
+2.     validateUsersDevices(user);
+3.     calculateSensorsTotal(user);
+4.     saveUser(user);
+5. }
+6. 
+7. private void validateUsersDevices(User user) {
+8.     if (user.getDevices().isEmpty()) {
+9.         throw new IllegalArgumentException("User doesn't have any device");
+10.     }
+11. }
+12. 
+13. private void calculateUsersSensorsTotal(User user) {
+14. 	int sencorCount = 0;
+15.     for (Device device : user.getDevices()) {
+16.         sencorCount += device.getSensorsCount();
+17.     }
+18.     user.setSensorCount(sencorCount);
+19. }
+20. 
+21. private void saveUser(User user) {
+22.     database.save(user);
+23. }
+
+Файл «names_before.java»
+1. final int minAge = 14;
+2. public class getUser {
+3.     private int Age;
+4. 	private string nameString;
+5. 
+6.     public int Age() {
+7.         return this.Age;
+8.     }
+9. 
+10.     public int name() {
+11.         return this.nameString;
+12.     }
+13. }
+
+Файл «names_after.java»
+1. final int MIN_AGE = 14;
+2. public class User {
+3.     private int age;
+4. 	private string name;
+5. 
+6.     public int getAge() {
+7.         return this.age;
+8.     }
+9. 
+10.     public int getName() {
+11.         return this.name;
+12.     }
+13. }
+
+
+
+ДОДАТОК Б
+
+Рисунок 1 – Слайд 1
+
+Рисунок 2 – Слайд 2
+
+Рисунок 3 – Слайд 3
+
+Рисунок 4 – Слайд 4
+
+Рисунок 5 – Слайд 5
+
+Рисунок 6 – Слайд 6
+
+Рисунок 7 – Слайд 7
+
+Рисунок 8 – Слайд 8
+
+Рисунок 9 – Слайд 9
+
+Рисунок 10 – Слайд 10
+
+Рисунок 11 – Слайд 11
+
+Рисунок 12 – Слайд 12
+
+Рисунок 13 – Слайд 13
+
+Рисунок 14 – Слайд 14
+
+Рисунок 15 – Слайд 15
+
+
+
+
+
+
