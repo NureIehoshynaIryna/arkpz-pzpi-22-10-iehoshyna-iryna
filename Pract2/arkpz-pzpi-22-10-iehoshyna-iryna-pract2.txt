@@ -1,0 +1,199 @@
+﻿Міністерство освіти і науки України
+Харківський національний університет радіоелектроніки
+Кафедра «Програмна інженерія»
+
+
+
+
+
+Звіт 
+до практичного заняття №2 з дисципліни
+«Аналіз та рефакторинг коду»
+На тему: «Методи рефакторингу коду програмного забезпечення»
+
+
+
+
+
+Виконала:                                                                         Перевірив:
+ст. гр. ПЗПІ-22-10                                                            ст. викладач кафедри ПІ 
+Ірина Єгошина Сергіївна                                                Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+
+Харків 2024
+	Мета:
+	Навчити студентів основним методам рефакторингу коду на основі реальних прикладів з їхніх власних програмних проєктів. Студенти повинні навчитися ідентифікувати проблеми в коді та використовувати відповідні методи рефакторингу для покращення його якості.
+
+	Завдання:
+1. Студент повинен обрати три методи рефакторингу коду із книги Мартіна Фаулера «Refactoring. Improving the Design of Existing Code».
+2. Навести приклади свого особистого коду (з курсових, лабораторних або інших проєктів), який потребує покращення, та продемонструвати застосування обраних методів.
+3. Кожен метод рефакторингу повинен супроводжуватись:
+   • Описом проблеми, яку вирішує даний метод.
+   • Кодом до і після застосування методу рефакторингу.
+   • Поясненням переваг використаного методу.
+
+	Хід роботи:
+	Було обрано теми: Add Parameter, Move Method, Rename method. У презентації (Додаток Б) наведено основні правила і рекомендації щодо виконання цих дій.
+
+	Висновки:
+	Набуто навичок рефакторингу програмного коду, детально розглянуто
+способи та правила для виконнання таких дій як Add Parameter, Move Method, Rename method.
+	Відео-презентація: https://www.youtube.com/watch?v=XohnRnBcs_k
+
+
+
+ДОДАТОК А
+Файл « add-parameter _before.java»
+1. public double CountBill(User user){
+2. 
+3.     if (TextUtils.isEmpty(user.Name)) {
+4.         System.out.println("User does't have name");
+5.         return -1;
+6.     }
+7. 
+8.     double sensorPrice = user.getSensorType().getSensorPrice();
+9. 	double userBill = user.sensorNumber * sensorPrice;
+10. 	return userBill;
+11. }
+
+Файл « add-parameter _after.java»
+1. public double CountBill(User user, int discountAmount = 0){
+2. 
+3.     if (TextUtils.isEmpty(user.Name)) {
+4.         System.out.println("User does't have name");
+5.         return -1;
+6.     }
+7. 
+8.     double sensorPrice = user.getSensorType().getSensorPrice();
+9. 	double userBill = user.sensorNumber * sensorPrice;
+10. 	if (userBill >= 1000) {
+11. 	    userBill -= discountAmount;
+12. 	}
+13. 	return userBill;
+14. }
+
+Файл « move-method_before.java»
+1. public class User {
+2. 	private String name;
+3. 	private String email;
+4. 	private String password;
+5. 
+6. 	// ...
+7. 
+8.     public void displayProfile(Profile profile) {
+9.         System.out.println("Name: " + name);
+10.         System.out.println("Email: " + email);
+11.         System.out.println("Age: " + profile.getAge());
+12.     }
+13. }
+14. 
+15. public class Profile {
+16.     private int age;
+17. 
+18.     //...
+19. 
+20.     public int getAge() {
+21.         return age;
+22.     }
+23. }
+
+Файл « move-method_after.java»
+1. public class User {
+2. 	private String name;
+3. 	private String email;
+4. 	private String password;
+5. 
+6. 	// ...
+7. }
+8. 
+9. public class Profile {
+10.     private int age;
+11. 
+12.     public void displayProfile(User user) {
+13. 	    System.out.println("Name: " + user.getName());
+14. 	    System.out.println("Email: " + user.getEmail());
+15. 	    System.out.println("Age: " + age);
+16. 	}
+17. }
+
+Файл « rename-method_before.java»
+1. public class User {
+2. 	private String name;
+3. 	private String email;
+4. 	private String password;
+5. 
+6. 	public int deviceNumber;
+7. 	public int sensorNumber;
+8. 
+9. 	public String UserEmail() {
+10. 		return this.email;
+11. 	}
+12. }
+
+
+
+Файл « rename-method_after.java»
+1. public class User {
+2. 	private String name;
+3. 	private String email;
+4. 	private String password;
+5. 
+6. 	public int deviceNumber;
+7. 	public int sensorNumber;
+8. 
+9. 	// ...
+10. 	public String getEmail() {
+11. 		return this.email;
+12. 	}
+13. }
+
+
+
+
+ДОДАТОК Б
+
+Рисунок 1 – Слайд 1
+
+Рисунок 2 – Слайд 2
+
+Рисунок 3 – Слайд 3
+
+Рисунок 4 – Слайд 4
+
+Рисунок 5 – Слайд 5
+
+Рисунок 6 – Слайд 6
+
+Рисунок 7 – Слайд 7
+
+Рисунок 8 – Слайд 8
+
+Рисунок 9 – Слайд 9
+
+Рисунок 10 – Слайд 10
+
+Рисунок 11 – Слайд 11
+
+Рисунок 12 – Слайд 12
+
+Рисунок 13 – Слайд 13
+
+Рисунок 14 – Слайд 14
+
+Рисунок 15 – Слайд 15
+
+Рисунок 16 – Слайд 16
+
+
+
+
+
+
+
