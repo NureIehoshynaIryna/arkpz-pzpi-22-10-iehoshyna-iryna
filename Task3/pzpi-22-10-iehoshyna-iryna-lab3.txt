@@ -1,0 +1,187 @@
+﻿Міністерство освіти і науки України
+Харківський національний університет радіоелектроніки
+Кафедра комп’ютерних наук
+
+
+
+
+
+
+Звіт 
+з лабораторної роботи №3
+з предмету «Аналіз та рефакторинг коду»
+
+
+
+
+
+Виконала:                                                                              Перевірив:
+ст. гр. ПЗПІ-22-10                                                                Дашенков Д. С. 
+Ірина Єгошина 
+
+
+
+
+
+
+
+Харків 2024
+	Мета
+   	Розробка бизнес-логики та функції адміністрування серверної частини  програмної системи.
+	Хід роботи
+	Назва: «Програмна система для моніторінгу стану електроних пристроїв» HardMon.
+	Було продовжено розробку серверної частини, додавши до неї бізнес логіку та функції адміністрування.
+	Для кращого розуміння роботи сервера можна подивитись UML діаграму діяльності серверної частини на рис.1, а для розуміння взаємодії серверної частини - UML діаграму на рис.2.
+
+Рисунок 1 - UML діаграма діяльності для серверної частини
+	
+	Рисунок 2 -	UML діаграма взаємодії для серверної частини
+
+	Було розроблено серверну частину для адміністрування, специфікацію АРІ якої можна переглянути у табл. 1. 
+	Приклади бізнес логіки серверної частини можна побачити в додатку А. Приклади адміністрування серверної частини можна побачити в додатку Б.
+
+
+
+
+
+Таблиця 1 – «Специфікація розробленого АРІ для SystemAdminController»
+
+
+	Висновки: Було реалізовано бізнес логіку та функціонал (АРІ) для адміністрування серверної частини.
+
+
+Додаток А
+«UsersService»
+1.  public interface IUsersService {
+2.         Task<UserDto> GetUser(int userId);
+3.         Task<UserDto> Login(string email, string password);
+4.         Task<UserDto> Register(string email, string password);
+5.         Task ModifyUser(int userId, ModifyRequest request);
+6.     }
+7. 
+8.     public class UsersService : IUsersService {
+9. 
+10.         private readonly IUsersRepository usersRepository;
+11. 
+12.         public UsersService(IUsersRepository usersRepository) {
+13.             this.usersRepository = usersRepository;
+14.         }
+15. 
+16.         public async Task<UserDto> GetUser(int userId) {
+17.             return await usersRepository.GetUser(userId);
+18.         }
+19. 
+20.         public async Task<UserDto> Login(string email, string password) {
+21.             var hashedPassword = password.GetHash();
+22.             var user = await usersRepository.GetUser(email, hashedPassword);
+23.             if (user == null)
+24.                 throw new DomainException(HttpStatusCode.Forbidden, "User is not found");
+25.             return user;
+26.         }
+27.         
+28.         public async Task<UserDto> Register(string email, string password) {
+29.             //todo: check if it's mail
+30.             var registered = await usersRepository.IsEmailRegistered(email);
+31.             if (registered) {
+32.                 throw new DomainException(HttpStatusCode.BadRequest, "User is already registered");
+33.             }
+34.             
+35.             var hashedPassword = password.GetHash();
+36.             var name = email;//todo:
+37.             var user = await usersRepository.Register(name, email, hashedPassword);
+38.             if (user == null) {
+39.                 throw new DomainException(HttpStatusCode.BadRequest, "Error registering User, try again later");
+40.             }
+41.             return user;
+42.         }
+43. 
+44.         public async Task ModifyUser(int userId, ModifyRequest request) {
+45.             await usersRepository.ModifyUser(userId, request);
+46.         }
+47.     }
+
+
+Додаток Б
+«SystemAdminController»
+1. [CheckSysAdminRights]
+2. public class SystemAdminController : BaseApiController {
+3.     private readonly ISystemAdminService systemAdminService;
+4. 
+5.     public SystemAdminController(ISystemAdminService systemAdminService) {
+6.         this.systemAdminService = systemAdminService;
+7.     }
+8. 
+9.     [HttpGet, Route("api/sysAdmin/sensorType")]
+10.     public async Task<IEnumerable<SensorTypeDto>> GetSensorTypes() {
+11.         return await systemAdminService.GetSensorTypes();
+12.     }
+13.     
+14.     [HttpGet, Route("api/sysAdmin/sensorType/{sensorTypeId:int}")]
+15.     public async Task<SensorTypeDto> GetSensorTypeDetails(int sensorTypeId) {
+16.         return await systemAdminService.GetSensorTypeDetails(sensorTypeId);
+17.     }
+18.     
+19.     [HttpPost, Route("api/sysAdmin/sensorType")]
+20.     public async Task AddSensorType(SensorTypeRequest request) {
+21.         await systemAdminService.AddSensorType(request);
+22.     }
+23.     
+24.     [HttpPost, Route("api/sysAdmin/sensorType/{sensorTypeId:int}")]
+25.     public async Task ModifySensorTypeDetails(int sensorTypeId, SensorTypeRequest request) {
+26.         await systemAdminService.ModifySensorTypeDetails(sensorTypeId, request);
+27.     }
+28.     
+29.     [HttpDelete, Route("api/sysAdmin/sensorType/{sensorTypeId:int}")]
+30.     public async Task DeleteSensorType(int sensorTypeId) {
+31.         await systemAdminService.DeleteSensorType(sensorTypeId);
+32.     }
+33.     
+34.     
+35.     
+36.     [HttpGet, Route("api/sysAdmin/subscription")]
+37.     public async Task<IEnumerable<SubscriptionDto>> GetSubscriptions() {
+38.         return await systemAdminService.GetSubscriptions();
+39.     }
+40.     
+41.     [HttpGet, Route("api/sysAdmin/subscription/{subscriptionId:int}")]
+42.     public async Task<SubscriptionDto> GetSubscriptionDetails(int subscriptionId) {
+43.         return await systemAdminService.GetSubscriptionDetails(subscriptionId);
+44.     }
+45.     
+46.     [HttpPost, Route("api/sysAdmin/subscription")]
+47.     public async Task AddSubscription(SubscriptionRequest request) {
+48.         await systemAdminService.AddSubscription(request);
+49.     }
+50.     
+51.     [HttpPost, Route("api/sysAdmin/subscription/{subscriptionId:int}")]
+52.     public async Task ModifySubscriptionDetails(int subscriptionId, SubscriptionRequest request) {
+53.         await systemAdminService.ModifySubscriptionDetails(subscriptionId, request);
+54.     }
+55.     
+56.     [HttpDelete, Route("api/sysAdmin/subscription/{subscriptionId:int}")]
+57.     public async Task DeleteSubscription(int subscriptionId) {
+58.         await systemAdminService.DeleteSubscription(subscriptionId);
+59.     } 
+60.     
+61.     
+62.     
+63.     [HttpGet, Route("api/sysAdmin/subscriptionSensorType")]
+64.     public async Task<IEnumerable<SubscriptionSensorTypeDto>> GetSubscriptionSensorTypes() {
+65.         return await systemAdminService.GetSubscriptionSensorTypes();
+66.     }
+67.     
+68.     [HttpPost, Route("api/sysAdmin/subscriptionSensorType")]
+69.     public async Task AddSubscription(SubscriptionSensorTypeRequest request) {
+70.         await systemAdminService.AddSubscriptionSensorType(request);
+71.     }
+72.     
+73.     [HttpGet, Route("api/sysAdmin/subscriptionSensorType/{subscriptionId:int}/{sensorTypeId:int}")]
+74.     public async Task<SubscriptionSensorTypeDto> GetSubscriptionSensorTypeDetails(int subscriptionId, int sensorTypeId) {
+75.         return await systemAdminService.GetSubscriptionSensorTypeDetails(subscriptionId, sensorTypeId);
+76.     }
+77.     
+78.     [HttpDelete, Route("api/sysAdmin/subscriptionSensorType/{subscriptionId:int}/{sensorTypeId:int}")]
+79.     public async Task DeleteSubscriptionSensorType(int subscriptionId, int sensorTypeId) {
+80.         await systemAdminService.DeleteSubscriptionSensorType(subscriptionId, sensorTypeId);
+81.     }
+82. }
