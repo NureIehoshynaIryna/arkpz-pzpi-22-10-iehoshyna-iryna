@@ -1,0 +1,335 @@
+﻿Міністерство освіти і науки України
+Харківський національний університет радіоелектроніки
+Кафедра комп’ютерних наук
+
+
+
+
+
+
+Звіт 
+з лабораторної роботи №2
+з предмету «Аналіз та рефакторинг коду»
+
+
+
+
+
+Виконала:                                                                              Перевірив:
+ст. гр. ПЗПІ-22-10                                                                Дашенков Д. С. 
+Ірина Єгошина 
+
+
+
+
+
+
+
+Харків 2024
+	Мета
+	Розробка бази даних для серверної частини  програмної системи та прикладного програмного інтерфейсу.
+	Хід роботи
+	Назва: «Програмна система для моніторінгу стану електроних пристроїв» HardMon.
+	Було вирішенно розробляти БД на MSSql та сервер на С#. Для сервера було використано систему розділення на Controllers, Services, Repository та Dto. Було вирішено використовувати REST АРІ.
+	Як виглядає взаємодія частин системи можна побачити на UML діаграмі прецедентів для серверної частини системи рис.1.
+
+Рисунок 1 - UML діаграма прецедентів для серверної частини
+
+
+
+	Перед створенням бази даних було сворено ER діаграму даних, аби продумати всю структуру і не перобляти БД. Побачити ER діаграму  можна на рис. 2.
+
+Рисунок 2 - ER діаграма БД
+
+	Згідно до цієї діаграми було розроблено БД, з урахуванням всіх каскадних оновлень та видалень пов'язаних з зовнішніми ключами. До отриманої БД було складано діаграму її структури, яку можна побачити на рис.3.
+
+Рисунок 3 - Діаграма структури БД
+
+	Після розробки БД було розроблено серверну частину, а саме Controllers, Services, Repository та Dto, які дозволяють взаємодіяти серверній чатині з клієнтом та БД. 
+	Приклади логіки взаємодії серверної частини з клієнтами можна побачити в додатку А. Приклади логіки взаємодії серверної частини з БД можна побачити в додатку Б.
+	Переглянути специфікацію розробленого АРІ можна у таблицях.
+
+
+
+Таблиця 1 – «Специфікація розробленого АРІ для AccountsController»
+
+Таблиця 2 – «Специфікація розробленого АРІ для DevicesController»
+
+Таблиця 3 – «Специфікація розробленого АРІ для ProfileController»
+
+
+
+Таблиця 4 – «Специфікація розробленого АРІ для SensorsController»
+
+	
+	Висновки: Було реалізовано БД та API для взаємодії з клієнтами та БД.
+
+
+Додаток А
+«AccountsController»
+1.     public class AccountsController : BaseApiController {
+2.         private readonly IAccountsService accountsService;
+3. 
+4.         public AccountsController(IAccountsService accountsService) {
+5.             this.accountsService = accountsService;
+6.         }
+7. 
+8.         [HttpGet, Route("api/accounts")]
+9.         public async Task<IEnumerable<AccountDto>> GetAccounts() {
+10.             return await accountsService.GetAccounts(CurrentIdentity.UserId);
+11.         }
+12. 
+13.         [HttpPost, Route("api/accounts")]
+14.         public async Task AddAccount(AddAccountRequestDto request) {
+15.             await accountsService.AddAccount(CurrentIdentity.UserId, request);
+16.         }
+17.         
+18.         [CheckAccount(AccountUserType.Admin)]
+19.         [HttpDelete, Route("api/accounts/{accountId:int}")]
+20.         public async Task DeleteAccount(int accountId) {
+21.             await accountsService.DeleteAccount(CurrentIdentity.UserId, accountId);
+22.         }
+23.         
+24.         [CheckAccount]
+25.         [HttpGet, Route("api/accounts/{accountId:int}")]
+26.         public async Task<AccountDetailsDto> GetAccountDetails(int accountId) {
+27.             return await accountsService.GetAccountDetails(accountId);
+28.         }
+29. 
+30.         [CheckAccount(AccountUserType.Admin)]
+31.         [HttpPost, Route("api/accounts/{accountId:int}")]
+32.         public async Task EditAccount(AccountDetailsRequest request) {
+33.             await accountsService.EditAccountDetails(request);
+34.         }
+35.         
+36.         [CheckAccount(AccountUserType.Admin)]
+37.         [HttpGet, Route("api/accounts/{accountId:int}/invites")]
+38.         public async Task<AccountInvitesDto> GetInvitesForAccount(int accountId) {
+39.             return await accountsService.GetAccountInvites(accountId);
+40.         }
+41.         
+42.         [CheckAccount(AccountUserType.Admin)]
+43.         [HttpPost, Route("api/accounts/{accountId:int}/users")]
+44.         public async Task AddAccountUsers(int accountId, AddAccountUserRequest request) {
+45.             await accountsService.AddAccountUsers(CurrentIdentity.UserId, accountId, request);
+46.         }
+47.         
+48.         [CheckAccount(AccountUserType.Admin)]
+49.         [HttpDelete, Route("api/accounts/{accountId:int}/users")]
+50.         public async Task RemoveAccountUser(int accountId, RemoveAccountUserRequest request) {
+51.             await accountsService.RemoveAccountUser(accountId, request);
+52.         }
+53.     }
+ 
+
+
+Додаток Б
+«AccountsRepository»
+1. public interface IAccountsRepository {
+2.     Task<IEnumerable<AccountDto>> GetAccounts(int userId);
+3.     Task<AccountDto> GetAccount(int userId, int accountId);
+4.     Task LeaveAccount(int userId, int accountId);
+5.     Task DeleteAccount(int accountId);
+6.     Task CreateAccount(string accountName, int adminId);
+7.     Task<AccountDetailsDto> GetAccountDetails(int accountId);
+8.     Task ModifyAccount(AccountDetailsRequest request);
+9.     Task<AccountUserType> GetUserTypeByAccount(int userId, int accountId);
+10.     Task<bool> IsUserInAccount(int accountId, string email);
+11.     Task<bool> IsUserInvitedToAccount(int accountId, string email);
+12.     Task InviteUser(int userId, int accountId, AddAccountUserRequest request);
+13.     Task DeleteInvite(int accountId, string email);
+14.     Task<AccountInvitesDto> GetAccountInvites(int accountId);
+15. }
+16. 
+17. public class AccountsRepository : BaseRepository, IAccountsRepository {
+18.         
+19. public AccountsRepository(ISettingsProvider settingsProvider) : base(settingsProvider) {
+20.     }
+21. 
+22.     public async Task<IEnumerable<AccountDto>> GetAccounts(int userId) {
+23.         return await GetConnection().QueryAsync<AccountDto>(
+24.          @"SELECT  A.accountId as Id, A.accountName as Name, UA.userTypeId as UserType, S.subscriptionName as Subscription
+25. FROM UserAccount as UA
+26. JOIN Account as A ON UA.accountId = A.accountId
+27. JOIN Subscription as S ON S.subscriptionId = A.subscriptionId
+28. WHERE UA.userId = @userId
+29. ORDER BY A.accountName", 
+30.          new { userId });
+31.     }
+32. 
+33.     public async Task<AccountDto> GetAccount(int userId, int accountId) {
+34.         return await GetConnection().QueryFirstOrDefaultAsync<AccountDto>(
+35.             @"SELECT  A.accountId as Id, accountName as Name, UA.userTypeId as UserType, S.subscriptionName as Subscription
+36. FROM UserAccount as UA
+37. JOIN Account as A ON UA.accountId = A.accountId
+38. JOIN Subscription as S ON S.subscriptionId = A.subscriptionId
+39. WHERE UA.userId = @userId and UA.accountId = @accountId", 
+40.             new { userId, accountId });
+41.     }
+42. 
+43.     public async Task LeaveAccount(int userId, int accountId) {
+44.         var rowsAffected = await GetConnection().ExecuteAsync(
+45.             @"DELETE FROM UserAccount WHERE accountId = @accountId and userId = @userId", 
+46.             new { userId, accountId });
+47.         if (rowsAffected == 0) {
+48.             throw new DomainException(HttpStatusCode.NotFound, "Account is not found");
+49.         }
+50.     }
+51. 
+52.     public async Task DeleteAccount(int accountId) {
+53.         var rowsAffected = await GetConnection().ExecuteAsync(
+54.             @"DELETE FROM Account WHERE accountId = @accountId", 
+55.             new { accountId });
+56.         
+57.         if (rowsAffected == 0) {
+58.             throw new DomainException(HttpStatusCode.NotFound, "Account is not found");
+59.         }
+60.     }
+61. 
+62.     public async Task CreateAccount(string accountName, int adminId) {
+63.         await GetConnection().ExecuteAsync(
+64.             @"DECLARE @accountId int;
+65. INSERT INTO Account (subscriptionId, accountName) values (1, @accountName);
+66. SELECT @accountId = CAST(SCOPE_IDENTITY() as int);
+67. INSERT INTO UserAccount (userId, accountId, userTypeId) values (@adminId, @accountId, @userType);", 
+68.             new { accountName, adminId, userType = AccountUserType.Admin });
+69.     }
+70. 
+71.     public async Task<AccountDetailsDto> GetAccountDetails(int accountId) {
+72.         var reader = await GetConnection().QueryMultipleAsync(
+73.             @"SElECT accountId as Id, subscriptionId as Subscription, accountName as Name
+74. FROM Account WHERE accountId = @accountId;
+75. 
+76. SELECT UA.userId as Id, U.name, U.email, UA.userTypeId as UserType
+77. FROM UserAccount as UA
+78. JOIN [User] as U ON U.userId = UA.userId
+79. WHERE UA.accountId = @accountId;", 
+80.             new { accountId });
+81. 
+82.         var account = await reader.ReadFirstOrDefaultAsync<AccountDetailsDto>();
+83.         if (account == null) {
+84.             throw new DomainException(HttpStatusCode.NotFound, "Account is not found");
+85.         }
+86.         account.AccountUsers = await reader.ReadAsync<UserAccountDto>();
+87. 
+88.         return account;
+89.     }
+90. 
+91.     public async Task ModifyAccount(AccountDetailsRequest request) {
+92.         var rowsAffected = await GetConnection().ExecuteAsync(
+93.             @"UPDATE Account
+94. SET accountName = @accountName, subscriptionId = @accountSubscription
+95. WHERE accountId = @accountId;", 
+96.             new { accountId = request.Id, accountName = request.Name, accountSubscription = (int)request.Subscription });
+97.         
+98.         if (rowsAffected == 0) {
+99.             throw new DomainException(HttpStatusCode.NotFound, "Account is not found");
+100.         }
+101.     }
+102. 
+103.     public async Task<AccountUserType> GetUserTypeByAccount(int userId, int accountId) {
+104.         return await GetConnection().QueryFirstOrDefaultAsync<AccountUserType>(
+105.             @"SELECT userTypeId FROM UserAccount WHERE userId = @userId AND accountId = @accountId", 
+106.             new { userId, accountId });
+107.     }
+108. 
+109.     public async Task<bool> IsUserInAccount(int accountId, string email) {
+110.         var recordsNumberInDB =  await GetConnection().QueryFirstOrDefaultAsync<Int64>(
+111.             @"SELECT 1 FROM UserAccount as UA
+112. JOIN [User] as U ON UA.userId = U.userId
+113. WHERE UA.accountId = @accountId AND U.email = @email", 
+114.             new { accountId, email });
+115.         return recordsNumberInDB == 1;
+116.     }
+117. 
+118.     public async Task<bool> IsUserInvitedToAccount(int accountId, string email) {
+119.         var recordsNumberInDB =  await GetConnection().QueryFirstOrDefaultAsync<Int64>(
+120.             @"SELECT 1 FROM Invite
+121. WHERE accountId = @accountId AND guestEmail = @email", 
+122.             new { accountId, email });
+123.         return recordsNumberInDB == 1;
+124.     }
+125. 
+126.     public async Task InviteUser(int userId, int accountId, AddAccountUserRequest request) {
+127.         await GetConnection().ExecuteAsync(
+128.             @"INSERT INTO Invite (accountId, hostUserId, guestEmail, userTypeId, created) 
+129. VALUES (@accountId, @userId, @email, @userTypeId, GETDATE());", 
+130.             new { accountId, userId, email = request.Email, userTypeId = (int)request.UserType });
+131.     }
+132. 
+133.     public async Task DeleteInvite(int accountId, string email) {
+134.         await GetConnection().ExecuteAsync(
+135.             @"DELETE FROM Invite WHERE accountId = @accountId and guestEmail = @email", 
+136.             new { accountId, email });
+137.     }
+138. 
+139.     public async Task<AccountInvitesDto> GetAccountInvites(int accountId) {
+140.         var reader = await GetConnection().QueryMultipleAsync(
+141.             @"SElECT accountId as Id, accountName as Name
+142. FROM Account WHERE accountId = @accountId;
+143. 
+144. SELECT inviteId as Id, accountId as AccountId, guestEmail as GuestEmail, userTypeId as UserType
+145. FROM Invite
+146. WHERE accountId = @accountId;", 
+147.             new { accountId });
+148. 
+149.         var accountInfo = await reader.ReadFirstOrDefaultAsync<AccountInvitesDto>();
+150.         if (accountInfo == null) {
+151.             throw new DomainException(HttpStatusCode.NotFound, "Account is not found");
+152.         }
+153.         accountInfo.Invites = await reader.ReadAsync<InviteDto>();
+154. 
+155.         return accountInfo;
+156.     }
+157. }30.             switch (userAccount.UserType) {
+31.                 case AccountUserType.Admin:
+32.                     await accountsRepository.DeleteAccount(accountId);
+33.                     break;
+34.                 case AccountUserType.Member:
+35.                     await accountsRepository.LeaveAccount(userId, accountId);
+36.                     break;
+37.             }
+38.         }
+39. 
+40.         public async Task AddAccount(int userId, AddAccountRequestDto request) {
+41.             if (request == null || request.Name.IsNullOrEmpty()) {
+42.                 throw new DomainException(HttpStatusCode.BadRequest, "Invalid data");
+43.             }
+44. 
+45.             await accountsRepository.CreateAccount(request.Name, userId);
+46.         }
+47. 
+48.         public async Task<AccountDetailsDto> GetAccountDetails(int accountId) {
+49.             return await accountsRepository.GetAccountDetails(accountId);
+50.         }
+51. 
+52.         public async Task EditAccountDetails(AccountDetailsRequest request) {
+53.             if (request == null || request.Name.IsNullOrEmpty()) {
+54.                 throw new DomainException(HttpStatusCode.BadRequest, "Invalid data");
+55.             }            
+56.             await accountsRepository.ModifyAccount(request);
+57.         }
+58. 
+59.         public async Task AddAccountUsers(int userId, int accountId, AddAccountUserRequest request) {
+60.             var registered = await accountsRepository.IsUserInAccount(accountId, request.Email);
+61.             if (registered) {
+62.                 throw new DomainException(HttpStatusCode.BadRequest, "User is already in this account");
+63.             }
+64.             
+65.             var invited = await accountsRepository.IsUserInvitedToAccount(accountId, request.Email);
+66.             if (invited) {
+67.                 throw new DomainException(HttpStatusCode.BadRequest, "User is already invited to this account");
+68.             }
+69.             
+70.             await accountsRepository.InviteUser(userId, accountId, request);
+71.         }
+72. 
+73.         public async Task RemoveAccountUser(int accountId, RemoveAccountUserRequest request) {
+74.             await accountsRepository.DeleteInvite(accountId, request.Email);
+75.         }
+76. 
+77.         public async Task<AccountInvitesDto> GetAccountInvites(int accountId) {
+78.             return await accountsRepository.GetAccountInvites(accountId);
+79.         }
+80.     }
+81. }
