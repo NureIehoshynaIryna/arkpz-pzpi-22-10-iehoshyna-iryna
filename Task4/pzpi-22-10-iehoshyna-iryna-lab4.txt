@@ -1,0 +1,160 @@
+﻿Міністерство освіти і науки України
+Харківський національний університет радіоелектроніки
+Кафедра комп’ютерних наук
+
+
+
+
+
+
+Звіт 
+з лабораторної роботи №4
+з предмету «Аналіз та рефакторинг коду»
+
+
+
+
+
+Виконала:                                                                              Перевірив:
+ст. гр. ПЗПІ-22-10                                                                Дашенков Д. С. 
+Ірина Єгошина 
+
+
+
+
+
+
+
+Харків 2024
+	Мета
+	Розробка програмного забезпечення для  IoT або SmartDevice пристрою, створеного на базі будь-якої поширеної на  сьогодні платформи, придатної для реалізації вбудованих систем (Embedded  System).
+	Хід роботи
+	Назва: «Програмна система для моніторінгу стану електроних пристроїв» HardMon.
+	Було створено програмне забезпечення для ІоТ, яке створене на базі Arduino esp22 з використанням сенсора dht22 для збору даних про температуру та вологість повітря.
+	Як виглядає взаємодія ІоТ та сервера можна побачити на UML діаграмі прецедентів для ІоТ на рис.1.
+
+Рисунок 1 - UML діаграма прецедентів для ІоТ клієнта
+
+	Для кращого розуміння роботи ІоТ можна подивитись UML діаграму діяльності ІоТ на рис.2.
+
+Рисунок 2 - UML діаграму діяльності ІоТ
+
+	Приклади бізнес логіки IoT можна побачити в додатку А. Приклади налаштування IoT можна побачити в додатку Б.
+	Висновки: Було розроблено програмне забезпечення для  IoT на основі Arduino.
+
+
+Додаток А
+1. void setup()
+2. {
+3.   Serial.begin(115200);
+4.   pinMode(ledPin, OUTPUT);
+5.   pinMode(buttonPin, INPUT);
+6. 
+7.   // Initialize Wi-Fi
+8.   WiFi.begin(ssid, password);
+9.   Serial.print("Connecting to Wi-Fi");
+10. 
+11.   while (WiFi.status() != WL_CONNECTED)
+12.   {
+13.     delay(500);
+14.     Serial.print(".");
+15.   }
+16. 
+17.   Serial.println("Connected!");
+18. 
+19.   // Check and initialize token
+20.   authToken = String(ESP.getEfuseMac());
+21.   Serial.println(authToken);
+22. 
+23.   dht.begin();
+24.   buttonState = digitalRead(buttonPin);
+25. }
+26. 
+27. void loop()
+28. {
+29.   if (WiFi.status() != WL_CONNECTED)
+30.   {
+31.     Serial.println("Wi-Fi disconnected!");
+32.     delay(1000);
+33.     return;
+34.   }
+35. 
+36.   boolean newState = digitalRead(buttonPin);
+37.   if (newState != buttonState)
+38.   {
+39.     buttonState = newState;
+40.     Serial.println("Button pressed! New state: " + String(buttonState));
+41.     connectToServer();
+42.   }
+43. 
+44.   float temperature = dht.readTemperature();
+45.   float humidity = dht.readHumidity();
+46. 
+47.   Serial.println("Temperature: " + String(temperature) + "°C");
+48.   Serial.println("Humidity: " + String(humidity) + "%");
+49. 
+50.   if (isnan(temperature) || isnan(humidity))
+51.   {
+52.     Serial.println("Failed to read from DHT sensor!");
+53.     return;
+54.   }
+55. 
+56.   String jsonPayload = "{\"temperature\":" + String(temperature) + ",\"humidity\":" + String(humidity) + "}";
+57. 
+58.   if (hasConfig && ((temperature > maxTemperature && maxTemperature != INFINITY) || (temperature < minTemperature && minTemperature != -INFINITY)))
+59.   {
+60.     Serial.println("Alert! Sending data to /alert endpoint.");
+61.     String alertMessage = "Temperature is out of norm: " + String(temperature);
+62.     sendDataToServer("/alert", "{\"alertMessage\": \"" + alertMessage + "\"}");
+63.   }
+64.   else if (hasConfig && ((humidity > maxHumidity && maxHumidity != INFINITY) || (humidity < minHumidity && minHumidity != -INFINITY)))
+65.   {
+66.     Serial.println("Alert! Sending data to /alert endpoint.");
+67.     String alertMessage = "Humidity is out of norm: " + String(humidity);
+68.     sendDataToServer("/alert", "{\"alertMessage\": \"" + alertMessage + "\"}");
+69.   }
+70.   else if (millis() - lastDataSendTime >= (intervalSeconds * 1000))
+71.   {
+72.     Serial.println("Sending data to /data endpoint.");
+73.     sendDataToServer("/data", jsonPayload);
+74.     lastDataSendTime = millis();
+75.   }
+76.   delay(1000);
+77. }
+78.
+
+
+Додаток Б
+1. String authToken;
+2. unsigned long lastDataSendTime = 0;
+3. 
+4. float minTemperature = -INFINITY;
+5. float maxTemperature = INFINITY;
+6. float minHumidity = -INFINITY;
+7. float maxHumidity = INFINITY;
+8. int intervalSeconds = 60;
+9. boolean hasConfig = false;
+10. 
+11. void parseServerResponse(String response)
+12. {
+13.   StaticJsonDocument<256> doc;
+14.   DeserializationError error = deserializeJson(doc, response);
+15. 
+16.   if (!error)
+17.   {
+18.     if (doc.containsKey("minTemperature"))
+19.       minTemperature = doc["minTemperature"].as<float>();
+20.     if (doc.containsKey("maxTemperature"))
+21.       maxTemperature = doc["maxTemperature"].as<float>();
+22.     if (doc.containsKey("minHumidity"))
+23.       minHumidity = doc["minHumidity"].as<float>();
+24.     if (doc.containsKey("maxHumidity"))
+25.       maxHumidity = doc["maxHumidity"].as<float>();
+26.     if (doc.containsKey("interval_seconds"))
+27.       intervalSeconds = doc["interval_seconds"].as<int>() * 1000;
+28.   }
+29.   else
+30.   {
+31.     Serial.println("Failed to parse server response.");
+32.   }
+33. }
